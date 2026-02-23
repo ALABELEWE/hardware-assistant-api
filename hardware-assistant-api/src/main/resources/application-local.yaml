@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hardware_assistant_local
+    username: postgres
+    password: Omotosho3664!
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.hardwareassistant: DEBUG
+    org.springframework.security: DEBUG
+
+server:
+  port: 8080
+
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:d1420738aac871eee4aa79758f23612a865672502456ee7bab896313959780ef350314f343b98359e890a7c205c1594643ea9e388a4a7286a6b061fcf0214885}
+    expiration-ms: 86400000
+
+  ai:
+    groq-api-key: ${GROQ_API_KEY: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}
+    groq-base-url: https://api.groq.com
+    model: llama-3.3-70b-versatile
+#    gemini-api-key:  AIzaSyD8iTccKviD48LHi0byQEbQi5p88kfqJss
+#    gemini-base-url: https://generativelanguage.googleapis.com
+#    model: gemini-2.0-flash
+
+  sms:
+    africastalking-api-key: ${GEMINI_API_KEY:atsk_4d3675d384197b7dad108ba5200e80be7e2db4240c5af2fb67ad4670f2992427fd6ff4f3}
+    africastalking-username: ${AT_USERNAME:sandbox}
+
+  payment:
+    paystack-secret-key: ${PAYSTACK_SECRET_KEY:sk_test_19550bc5e85b206bfaef74906127ae6e6c49cb1f}
+    paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET:test}

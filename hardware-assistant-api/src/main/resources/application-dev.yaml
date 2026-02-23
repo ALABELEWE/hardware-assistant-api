@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.hardwareassistant: DEBUG
+
+server:
+  port: ${PORT:8080}
