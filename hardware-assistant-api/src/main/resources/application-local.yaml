@@ -28,7 +28,7 @@ app:
     model: llama-3.3-70b-versatile
 
   sms:
-    africastalking-api-key: ${GEMINI_API_KEY}
+    africastalking-api-key: ${AT_API_KEY}
     africastalking-username: ${AT_USERNAME}
 
   payment:
