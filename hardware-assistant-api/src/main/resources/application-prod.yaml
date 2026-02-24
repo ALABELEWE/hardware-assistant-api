@@ -3,22 +3,37 @@ spring:
     url: ${DATABASE_URL}
     username: ${DATABASE_USERNAME}
     password: ${DATABASE_PASSWORD}
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
+    driver-class-name: org.postgresql.Driver
   jpa:
+    hibernate:
+      ddl-auto: validate
     show-sql: false
-
-logging:
-  level:
-    com.hardwareassistant: WARN
-    root: ERROR
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 
 server:
   port: ${PORT:8080}
 
-management:
-  endpoint:
-    health:
-      show-details: never
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: 86400000
+  ai:
+    groq-api-key: ${GROQ_API_KEY}
+    groq-base-url: https://api.groq.com
+    model: llama-3.3-70b-versatile
+  sms:
+    africastalking-api-key: ${AT_API_KEY}
+    africastalking-username: ${AT_USERNAME}
+  payment:
+    paystack-secret-key: ${PAYSTACK_SECRET_KEY}
+    paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET}
+
+logging:
+  level:
+    com.hardwareassistant: INFO
+    org.springframework.security: WARN
