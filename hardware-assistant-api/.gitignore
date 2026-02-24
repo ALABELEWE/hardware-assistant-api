@@ -1,10 +1,22 @@
-HELP.md
+# Maven
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+.mvn/wrapper/maven-wrapper.jar
 
-### STS ###
+# Secrets - NEVER commit these
+**/application-local.yml
+**/application-dev.yml
+.env
+*.env
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Spring Tools Suite
 .apt_generated
 .classpath
 .factorypath
@@ -13,13 +25,7 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -29,11 +35,16 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
 
+# OS
+.DS_Store
+Thumbs.db
 
-.idea/
-application-local.yml
-application-dev.yml
-.env
+# Logs
+*.log
+logs/
+
+# Help file (optional - remove if you want to keep it)
+HELP.md

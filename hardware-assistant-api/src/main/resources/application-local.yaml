@@ -17,11 +17,11 @@ server:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:d1420738aac871eee4aa79758f23612a865672502456ee7bab896313959780ef350314f343b98359e890a7c205c1594643ea9e388a4a7286a6b061fcf0214885}
+    secret: ${JWT_SECRET:6eeae69d98497aed84336de6243b5085b0e05bc18084c07a123ecb48532f0044996c0076a7ce9e65ac6af632c42e6e71914d41ae087fddf7f057344c91738d5a}
     expiration-ms: 86400000
 
   ai:
-    groq-api-key: ${GROQ_API_KEY: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}
+    groq-api-key: ${GROQ_API_KEY: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}
     groq-base-url: https://api.groq.com
     model: llama-3.3-70b-versatile
 #    gemini-api-key:  AIzaSyD8iTccKviD48LHi0byQEbQi5p88kfqJss
@@ -29,9 +29,9 @@ app:
 #    model: gemini-2.0-flash
 
   sms:
-    africastalking-api-key: ${GEMINI_API_KEY:atsk_4d3675d384197b7dad108ba5200e80be7e2db4240c5af2fb67ad4670f2992427fd6ff4f3}
+    africastalking-api-key: ${GEMINI_API_KEY:atsk_921377e0dc4f3f089610784ddee94ab3baf44361a14d9a31fda2c04293698967e88f89c9}
     africastalking-username: ${AT_USERNAME:sandbox}
 
   payment:
-    paystack-secret-key: ${PAYSTACK_SECRET_KEY:sk_test_19550bc5e85b206bfaef74906127ae6e6c49cb1f}
+    paystack-secret-key: ${PAYSTACK_SECRET_KEY:sk_test_0547052f18ade4cb3e8b1f3116f343b0e2503e95}
     paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET:test}
