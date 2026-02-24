@@ -25,22 +25,18 @@ management:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:local-dev-secret-key-minimum-256-bits-long-1234567890abcdef}
+    secret: ${JWT_SECRET}
     expiration-ms: 86400000
 
   ai:
-    groq-api-key: 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
+    groq-api-key: ${GROQ_API_KEY}
     groq-base-url: https://api.groq.com
     model: llama-3.3-70b-versatile
-#  ai:
-#    gemini-api-key:  AIzaSyD8iTccKviD48LHi0byQEbQi5p88kfqJss
-#    gemini-base-url: https://generativelanguage.googleapis.com
-#    model: gemini-2.0-flash
 
   sms:
-    africastalking-api-key: ${GEMINI_API_KEY:atsk_921377e0dc4f3f089610784ddee94ab3baf44361a14d9a31fda2c04293698967e88f89c9}
-    africastalking-username: ${AT_USERNAME:sandbox}
+    africastalking-api-key: ${GEMINI_API_KEY}
+    africastalking-username: ${AT_USERNAME}
 
   payment:
-    paystack-secret-key: ${PAYSTACK_SECRET_KEY:sk_test_0547052f18ade4cb3e8b1f3116f343b0e2503e95}
-    paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET:test}
+    paystack-secret-key: ${PAYSTACK_SECRET_KEY}
+    paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET}
