@@ -32,9 +32,9 @@ public class InputSanitizer {
 
         // length limit
         int maxLength = fieldName.equals("description") ? MAX_DESCRIPTION_LENGTH : MAX_FIELD_LENGTH;
-        if (input.length() <= maxLength) {
+        if (input.length() > maxLength) {
             log.warn("Input truncated for field: {} - original length: {}", fieldName, input.length());
-            input = input.substring(0, maxLength);
+            input = input.substring(0, Math.min(maxLength, input.length()));
         }
 
         // Check for injection patterns
