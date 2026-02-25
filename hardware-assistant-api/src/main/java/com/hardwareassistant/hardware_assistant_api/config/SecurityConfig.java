@@ -1,7 +1,9 @@
 package com.hardwareassistant.hardware_assistant_api.config;
 
 import com.hardwareassistant.hardware_assistant_api.filter.JwtAuthenticationFilter;
+import com.hardwareassistant.hardware_assistant_api.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -65,5 +67,14 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilter() {
+        FilterRegistrationBean<RateLimitFilter> bean = new FilterRegistrationBean<>();
+        bean.setFilter(new RateLimitFilter());
+        bean.addUrlPatterns("/api/analysis/*");
+        bean.setOrder(1);
+        return bean;
     }
 }
