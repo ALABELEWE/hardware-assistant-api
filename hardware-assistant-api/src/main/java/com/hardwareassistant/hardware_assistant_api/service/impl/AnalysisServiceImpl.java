@@ -58,7 +58,7 @@ public class AnalysisServiceImpl implements AnalysisService {
             try {
                 JsonNode node = objectMapper.readTree(aiJson);
                 String smsAlert = node.has("smsAlert") ? node.get("smsAlert").asText() : "New business insight available!";
-                smsService.sendSms(profile, smsAlert);
+                smsService.sendSms(profile.getUser(), smsAlert, analysis.getId());
             } catch (Exception e) {
                 log.warn("Could not extract SMS alert from AI response: {}", e.getMessage());
             }
