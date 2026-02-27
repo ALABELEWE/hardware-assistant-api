@@ -46,3 +46,8 @@ app:
   payment:
     paystack-secret-key: ${PAYSTACK_SECRET_KEY}
     paystack-webhook-secret: ${PAYSTACK_WEBHOOK_SECRET}
+
+  resend:
+    api-key: ${RESEND_API_KEY}
+    from-email: noreply@hardwareai.org
+    frontend-url: ${FRONTEND_URL:https://hardware-assistant-frontend.vercel.app}
