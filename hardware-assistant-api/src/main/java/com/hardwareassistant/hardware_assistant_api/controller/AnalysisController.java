@@ -32,6 +32,17 @@ public class AnalysisController {
     private final InputSanitizer inputSanitizer;
     private final SecurityIncidentService incidentService;
 
+    @GetMapping("/history")
+    public ResponseEntity<ApiResponse<Page<AnalysisResponse>>> history(
+            @AuthenticationPrincipal User user,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<AnalysisResponse> response = analysisService
+                .getAnalysisHistory(user, PageRequest.of(page, size))
+                .map(AnalysisResponse::from);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse<BusinessAnalysis>> generateAnalysis(
             @AuthenticationPrincipal UserDetails userDetails,
