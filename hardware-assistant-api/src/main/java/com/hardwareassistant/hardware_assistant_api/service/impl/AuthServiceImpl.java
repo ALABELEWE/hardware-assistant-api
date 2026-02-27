@@ -13,6 +13,7 @@ import com.hardwareassistant.hardware_assistant_api.service.EmailService;
 import com.hardwareassistant.hardware_assistant_api.service.EmailVerificationService;
 import com.hardwareassistant.hardware_assistant_api.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -47,8 +49,15 @@ public class AuthServiceImpl implements AuthService {
 
         user = userRepository.save(user); // capture saved instance with generated ID
 
-        // Send verification email async
-        emailVerificationService.sendVerificationEmail(user.getEmail());
+        // TODO: Will have to verify domain to make this work later
+
+        try {
+            emailVerificationService.sendVerificationEmail(user.getEmail());
+        } catch (Exception e) {
+            log.warn("Could not send verification email to {}: {}",
+                    user.getEmail(), e.getMessage());
+            // Registration still succeeds
+        }
 
         return AuthResponse.builder()
                 .message("Registration successful. Please check your email to verify your account.")
