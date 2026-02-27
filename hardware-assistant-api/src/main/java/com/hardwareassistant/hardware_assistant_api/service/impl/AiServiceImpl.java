@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hardwareassistant.hardware_assistant_api.model.MerchantProfile;
 import com.hardwareassistant.hardware_assistant_api.security.AiResponseValidator;
 import com.hardwareassistant.hardware_assistant_api.security.InputSanitizer;
+import com.hardwareassistant.hardware_assistant_api.security.SanitizationResult;
 import com.hardwareassistant.hardware_assistant_api.security.SecurePromptBuilder;
 import com.hardwareassistant.hardware_assistant_api.service.AiService;
 import com.hardwareassistant.hardware_assistant_api.service.AiUsageService;
@@ -16,7 +17,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -44,11 +44,7 @@ public class AiServiceImpl implements AiService {
     @Override
     public String generateBusinessInsights(MerchantProfile profile) {
 
-        // Step 1 — Check email verification
-//        if (!profile.getUser().isEmailVerified()) {
-//            throw new RuntimeException(
-//                    "Please verify your email before generating analysis.");
-//        }
+        // Step 1 — Verify email
         if (!profile.getUser().isEmailVerified()) {
             throw new RuntimeException(
                     "Please verify your email before generating analysis.");
@@ -57,28 +53,41 @@ public class AiServiceImpl implements AiService {
         // Step 2 — Check monthly quota
         aiUsageService.checkQuota(profile.getUser());
 
-        // Step 3 — Sanitize all merchant inputs
-        try {
-            inputSanitizer.sanitizeMerchantProfile(
-                    profile.getBusinessName(),
-                    profile.getLocation(),
-                    profile.getProducts(),
-                    profile.getProducts()
-            );
-        } catch (SecurityException e) {
-            log.warn("SECURITY - Input sanitization blocked request for: {} - reason: {}",
-                    profile.getBusinessName(), e.getMessage());
-            return fallbackJson();
+        // Step 3 — Sanitise all merchant inputs, passing the user for incident tracking
+        SanitizationResult sanitization = inputSanitizer.sanitizeMerchantProfile(
+                profile.getBusinessName(),
+                profile.getLocation(),
+                profile.getProducts(),
+                profile.getCustomerType(),
+                profile.getUser()
+        );
+
+        if (sanitization.isBlocked()) {
+            log.warn("SECURITY - Input BLOCKED for user: {} field: {} pattern: {}",
+                    profile.getUser().getEmail(),
+                    sanitization.fieldName(),
+                    sanitization.matchedPattern());
+            // Throw so AnalysisController can return the structured security response
+            throw new SecurityException(sanitization.message());
+        }
+
+        if (sanitization.isWarning()) {
+            log.warn("SECURITY - Input WARNING for user: {} field: {} pattern: {}",
+                    profile.getUser().getEmail(),
+                    sanitization.fieldName(),
+                    sanitization.matchedPattern());
+            // Throw so AnalysisController can return the structured warning response
+            throw new SecurityException(sanitization.message());
         }
 
         // Step 4 — Build secure prompts
         String systemPrompt = promptBuilder.buildSystemPrompt();
         String userPrompt = promptBuilder.buildUserPrompt(
                 profile.getBusinessName(),
-                profile.getLocation() != null ? profile.getLocation() : "Not specified",
-                profile.getProducts() != null ? profile.getProducts() : "Not specified",
+                profile.getLocation()    != null ? profile.getLocation()    : "Not specified",
+                profile.getProducts()    != null ? profile.getProducts()    : "Not specified",
                 "",
-                profile.getPriceRange() != null ? profile.getPriceRange() : "Not specified",
+                profile.getPriceRange()  != null ? profile.getPriceRange()  : "Not specified",
                 profile.getCustomerType() != null ? profile.getCustomerType() : "Not specified"
         );
 
@@ -94,14 +103,14 @@ public class AiServiceImpl implements AiService {
                         profile.getBusinessName());
 
                 // Step 7 — Record token usage
-                int promptTokens = (int) groqResponse.get("promptTokens");
+                int promptTokens     = (int) groqResponse.get("promptTokens");
                 int completionTokens = (int) groqResponse.get("completionTokens");
                 aiUsageService.recordUsage(
                         profile.getUser(),
                         promptTokens,
                         completionTokens,
                         model,
-                        null // analysisId will be updated by caller after save
+                        null // analysisId updated by caller after save
                 );
 
                 return objectMapper.writeValueAsString(validated);
@@ -115,7 +124,7 @@ public class AiServiceImpl implements AiService {
                     return fallbackJson();
                 }
             } catch (RuntimeException e) {
-                // Re-throw business exceptions (quota, verification)
+                // Re-throw business exceptions (quota, verification, security)
                 throw e;
             } catch (Exception e) {
                 log.error("Groq API error for {}: {}",
@@ -132,10 +141,10 @@ public class AiServiceImpl implements AiService {
                 "model", model,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user", "content", userPrompt)
+                        Map.of("role", "user",   "content", userPrompt)
                 ),
-                "temperature", 0.7,
-                "max_tokens", 1024,
+                "temperature",     0.7,
+                "max_tokens",      1024,
                 "response_format", Map.of("type", "json_object")
         );
 
@@ -151,20 +160,18 @@ public class AiServiceImpl implements AiService {
                 .bodyToMono(Map.class)
                 .block();
 
-        // Extract content
-        List<?> choices = (List<?>) response.get("choices");
-        Map<?, ?> choice = (Map<?, ?>) choices.get(0);
+        List<?> choices  = (List<?>) response.get("choices");
+        Map<?, ?> choice  = (Map<?, ?>) choices.get(0);
         Map<?, ?> message = (Map<?, ?>) choice.get("message");
-        String content = (String) message.get("content");
+        String content    = (String) message.get("content");
 
-        // Extract token usage
-        Map<?, ?> usage = (Map<?, ?>) response.get("usage");
-        int promptTokens = usage != null ? (int) usage.get("prompt_tokens") : 0;
-        int completionTokens = usage != null ? (int) usage.get("completion_tokens") : 0;
+        Map<?, ?> usage          = (Map<?, ?>) response.get("usage");
+        int promptTokens         = usage != null ? (int) usage.get("prompt_tokens")     : 0;
+        int completionTokens     = usage != null ? (int) usage.get("completion_tokens") : 0;
 
         return Map.of(
-                "content", content,
-                "promptTokens", promptTokens,
+                "content",          content,
+                "promptTokens",     promptTokens,
                 "completionTokens", completionTokens
         );
     }
