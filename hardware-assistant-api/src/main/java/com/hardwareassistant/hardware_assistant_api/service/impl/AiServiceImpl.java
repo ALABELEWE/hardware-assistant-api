@@ -45,6 +45,10 @@ public class AiServiceImpl implements AiService {
     public String generateBusinessInsights(MerchantProfile profile) {
 
         // Step 1 — Check email verification
+//        if (!profile.getUser().isEmailVerified()) {
+//            throw new RuntimeException(
+//                    "Please verify your email before generating analysis.");
+//        }
         if (!profile.getUser().isEmailVerified()) {
             throw new RuntimeException(
                     "Please verify your email before generating analysis.");
