@@ -5,11 +5,9 @@ import com.hardwareassistant.hardware_assistant_api.dto.request.RegisterRequest;
 import com.hardwareassistant.hardware_assistant_api.dto.response.AuthResponse;
 import com.hardwareassistant.hardware_assistant_api.exception.BusinessException;
 import com.hardwareassistant.hardware_assistant_api.exception.EmailNotVerifiedException;
-import com.hardwareassistant.hardware_assistant_api.model.MerchantProfile;
 import com.hardwareassistant.hardware_assistant_api.model.User;
 import com.hardwareassistant.hardware_assistant_api.repository.UserRepository;
 import com.hardwareassistant.hardware_assistant_api.service.AuthService;
-import com.hardwareassistant.hardware_assistant_api.service.EmailService;
 import com.hardwareassistant.hardware_assistant_api.service.EmailVerificationService;
 import com.hardwareassistant.hardware_assistant_api.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -21,20 +19,39 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthServiceImpl implements AuthService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final AuthenticationManager authenticationManager;
-    private final EmailVerificationService emailVerificationService;
+
+    private final UserRepository              userRepository;
+    private final PasswordEncoder             passwordEncoder;
+    private final JwtUtil                     jwtUtil;
+    private final AuthenticationManager       authenticationManager;
+    private final EmailVerificationService    emailVerificationService;
 
     @Override
-    @Transactional
     public AuthResponse register(RegisterRequest request) {
+        // Step 1: save user in its own transaction — commits before email is attempted
+        User savedUser = saveNewUser(request);
+
+        // Step 2: send email AFTER transaction has committed — failure cannot affect registration
+        try {
+            emailVerificationService.sendVerificationEmail(savedUser.getEmail());
+        } catch (Exception e) {
+            log.warn("Could not send verification email to {}: {}",
+                    savedUser.getEmail(), e.getMessage());
+            // Registration still succeeds — email is best-effort
+        }
+
+        return AuthResponse.builder()
+                .message("Registration successful. Please check your email to verify your account.")
+                .build();
+    }
+
+    // Separate @Transactional method so it commits fully before returning
+    @Transactional
+    protected User saveNewUser(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email already in use");
         }
@@ -47,21 +64,7 @@ public class AuthServiceImpl implements AuthService {
                 .emailVerified(false)
                 .build();
 
-        user = userRepository.save(user); // capture saved instance with generated ID
-
-        // TODO: Will have to verify domain to make this work later
-
-        try {
-            emailVerificationService.sendVerificationEmail(user.getEmail());
-        } catch (Exception e) {
-            log.warn("Could not send verification email to {}: {}",
-                    user.getEmail(), e.getMessage());
-            // Registration still succeeds
-        }
-
-        return AuthResponse.builder()
-                .message("Registration successful. Please check your email to verify your account.")
-                .build();
+        return userRepository.save(user);
     }
 
     @Override
@@ -69,7 +72,8 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(LoginRequest request) {
         try {
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(), request.getPassword()));
         } catch (BadCredentialsException e) {
             throw new BusinessException("Invalid email or password");
         }
@@ -79,8 +83,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (user.getRole() == User.Role.MERCHANT && !user.isEmailVerified()) {
             throw new EmailNotVerifiedException(
-                    "Please verify your email before logging in. Check your inbox."
-            );
+                    "Please verify your email before logging in. Check your inbox.");
         }
 
         String token = jwtUtil.generateToken(user);
