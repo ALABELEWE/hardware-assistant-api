@@ -1,6 +1,5 @@
 package com.hardwareassistant.hardware_assistant_api.service.impl;
 
-import com.hardwareassistant.hardware_assistant_api.controller.UserRegistrationHelper;
 import com.hardwareassistant.hardware_assistant_api.dto.request.LoginRequest;
 import com.hardwareassistant.hardware_assistant_api.dto.request.RegisterRequest;
 import com.hardwareassistant.hardware_assistant_api.dto.response.AuthResponse;
