@@ -35,6 +35,16 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    @Column(name = "is_banned", nullable = false)
+    @Builder.Default
+    private boolean banned = false;
+
+    @Column(name = "ban_reason", length = 300)
+    private String banReason;
+
+    @Column(name = "banned_at")
+    private LocalDateTime bannedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

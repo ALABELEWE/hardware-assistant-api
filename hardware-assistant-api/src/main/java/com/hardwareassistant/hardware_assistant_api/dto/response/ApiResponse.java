@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
@@ -34,4 +35,21 @@ public class ApiResponse<T> {
         response.setFieldErrors(fieldErrors);
         return response;
     }
+
+
+    public static <T> ApiResponse<T> securityIncident(
+            String message,
+            String incidentType,   // "WARNING" or "BLOCKED"
+            long attemptCount
+    ) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setSuccess(false);
+        response.setMessage(message);
+        Map<String, String> meta = new LinkedHashMap<>();
+        meta.put("incidentType", incidentType);
+        meta.put("attemptCount", String.valueOf(attemptCount));
+        response.setFieldErrors(meta);
+        return response;
+    }
+
 }
