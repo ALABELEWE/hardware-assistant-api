@@ -11,7 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -42,15 +42,41 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("Access denied"));
     }
 
+    // Returns first field error as top-level message + full map for frontend field highlighting
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
-            String field = ((FieldError) error).getField();
-            errors.put(field, error.getDefaultMessage());
+            String field   = ((FieldError) error).getField();
+            String message = error.getDefaultMessage();
+            fieldErrors.putIfAbsent(field, message); // keep first error per field
         });
+
+        // First error becomes the human-readable top-level message
+        String firstMessage = fieldErrors.values().stream()
+                .findFirst()
+                .orElse("Validation failed");
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error("Validation failed: " + errors));
+                .body(ApiResponse.validationError(firstMessage, fieldErrors));
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleEmailNotVerified(EmailNotVerifiedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidToken(InvalidTokenException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTokenExpired(TokenExpiredException ex) {
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(ApiResponse.error(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
@@ -58,22 +84,5 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.error("An unexpected error occurred"));
-    }
-    @ExceptionHandler(EmailNotVerifiedException.class)
-    public ResponseEntity<ApiResponse<Void>> handleEmailNotVerified(EmailNotVerifiedException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.error(e.getMessage()));
-    }
-
-    @ExceptionHandler(InvalidTokenException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidToken(InvalidTokenException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.error(e.getMessage()));
-    }
-
-    @ExceptionHandler(TokenExpiredException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTokenExpired(TokenExpiredException e) {
-        return ResponseEntity.status(HttpStatus.GONE)
-                .body(ApiResponse.error(e.getMessage()));
     }
 }

@@ -1,24 +1,37 @@
 package com.hardwareassistant.hardware_assistant_api.dto.response;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Data @AllArgsConstructor
+import java.util.Map;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ApiResponse<T> {
     private boolean success;
     private String message;
     private T data;
+    private Map<String, String> fieldErrors;
 
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(true, "Success", data);
+        return new ApiResponse<>(true, "Success", data, null);
     }
 
     public static <T> ApiResponse<T> success(String message, T data) {
-        return new ApiResponse<>(true, message, data);
+        return new ApiResponse<>(true, message, data, null);
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null);
+        return new ApiResponse<>(false, message, null, null);
+    }
+
+    public static <T> ApiResponse<T> validationError(String message, Map<String, String> fieldErrors) {
+        ApiResponse<T> response = new ApiResponse<>();
+        response.setSuccess(false);
+        response.setMessage(message);
+        response.setFieldErrors(fieldErrors);
+        return response;
     }
 }
