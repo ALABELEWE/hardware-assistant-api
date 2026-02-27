@@ -33,6 +33,10 @@ app:
     groq-base-url: https://api.groq.com
     model: llama-3.3-70b-versatile
 
+    input-cost-per-million: 0.59
+    output-cost-per-million: 0.79
+    monthly-analysis-limit: 50
+
   sms:
     africastalking-api-key: ${AT_API_KEY}
     africastalking-username: ${AT_USERNAME}

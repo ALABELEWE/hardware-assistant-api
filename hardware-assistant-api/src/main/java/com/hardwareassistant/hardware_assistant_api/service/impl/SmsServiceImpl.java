@@ -1,66 +1,89 @@
 package com.hardwareassistant.hardware_assistant_api.service.impl;
 
-import com.hardwareassistant.hardware_assistant_api.model.MerchantProfile;
+
+import com.africastalking.AfricasTalking;
 import com.hardwareassistant.hardware_assistant_api.model.SmsLog;
+import com.hardwareassistant.hardware_assistant_api.model.User;
 import com.hardwareassistant.hardware_assistant_api.repository.SmsLogRepository;
 import com.hardwareassistant.hardware_assistant_api.service.SmsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class SmsServiceImpl implements SmsService {
 
-    @Value("${app.sms.africastalking-api-key}")
+    private final SmsLogRepository smsLogRepository;
+    private com.africastalking.SmsService smsService;
+
+    @Value("${AT_API_KEY}")
     private String apiKey;
 
-    @Value("${app.sms.africastalking-username}")
+    @Value("${AT_USERNAME}")
     private String username;
 
-    private final SmsLogRepository smsLogRepository;
-    private final WebClient.Builder webClientBuilder;
-
-
     @Override
-    public void sendSms(MerchantProfile profile, String message) {
-        SmsLog smsLog = SmsLog.builder()
-                .merchantProfile(profile)
-                .phoneNumber(profile.getPhoneNumber())
-                .message(message)
-                .status(SmsLog.SmsStatus.PENDING)
-                .build();
+    @Async
+    @Retryable(maxAttempts = 3, backoff = @Backoff(delay = 2000))
+    public void sendSms(User merchant, String message,
+                                UUID analysisId) {
+        String phone = null;
+                if(merchant.getMerchantProfile() != null){
+                    phone = merchant.getMerchantProfile().getPhoneNumber();
+                }
 
-        smsLog = smsLogRepository.save(smsLog);
-
-        try {
-            WebClient client = webClientBuilder
-                    .baseUrl("https://api.africastalking.com")
-                    .defaultHeader("apiKey", apiKey)
-                    .defaultHeader("Accept", "application/json")
-                    .build();
-
-            client.post()
-                    .uri("/version1/messaging")
-                    .body(BodyInserters.fromFormData("username", username)
-                            .with("to", profile.getPhoneNumber())
-                            .with("message", message))
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            smsLog.setStatus(SmsLog.SmsStatus.SENT);
-            log.info("SMS sent to {}", profile.getPhoneNumber());
-
-        } catch (Exception e) {
-            smsLog.setStatus(SmsLog.SmsStatus.FAILED);
-            log.error("SMS failed for {}: {}", profile.getPhoneNumber(), e.getMessage());
+        if (phone == null || phone.isBlank()) {
+            log.warn("No phone number for merchant: {}", merchant.getEmail());
+            return;
         }
 
+        String summerized = summarize(message);
+
+        SmsLog smsLog = SmsLog.builder()
+                .merchant(merchant)
+                .phoneNumber(phone)
+                .message(summarize(message))
+                .status(SmsLog.Status.PENDING)
+                .analysisId(analysisId)
+                .attempts(0)
+                .build();
         smsLogRepository.save(smsLog);
+
+        try {
+            AfricasTalking.initialize(username, apiKey);
+            smsService = AfricasTalking.getService(AfricasTalking.SERVICE_SMS);
+
+            smsLog.setAttempts(smsLog.getAttempts() + 1);
+            smsService.send(summarize(message), new String[]{phone}, false);
+
+
+            smsLog.setStatus(SmsLog.Status.SENT);
+            smsLog.setSentAt(LocalDateTime.now());
+            log.info("SMS sent to: {}", phone);
+
+        } catch (Exception e) {
+            smsLog.setStatus(SmsLog.Status.FAILED);
+            smsLog.setErrorMessage(e.getMessage());
+            log.error("SMS failed for {}: {}", phone, e.getMessage());
+        } finally {
+            smsLogRepository.save(smsLog);
+        }
     }
+
+    private String summarize(String message) {
+        if (message == null) return "";
+        return message.length() > 160
+                ? message.substring(0, 157) + "..."
+                : message;
+    }
+
 }

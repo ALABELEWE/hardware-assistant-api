@@ -41,6 +41,60 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    @Override
+    public void sendVerificationEmail(String toEmail, String verifyLink) {
+        try {
+            Resend resend = new Resend(apiKey);
+            String html = buildVerificationEmailHtml(verifyLink);
+            CreateEmailOptions options = CreateEmailOptions.builder()
+                    .from("HardwareAI <" + fromEmail + ">")
+                    .to(toEmail)
+                    .subject("Verify your HardwareAI email")
+                    .html(html)
+                    .build();
+            resend.emails().send(options);
+            log.info("Verification email sent to: {}", toEmail);
+        } catch (ResendException e) {
+            log.error("Failed to send verification email: {}", e.getMessage());
+            throw new RuntimeException("Failed to send verification email");
+        }
+    }
+
+    private String buildVerificationEmailHtml(String verifyLink) {
+        return """
+        <!DOCTYPE html>
+        <html>
+        <body style="margin:0;padding:0;background:#0a0a0a;font-family:Inter,sans-serif;">
+          <div style="max-width:520px;margin:40px auto;background:#111;border:1px solid #222;border-radius:16px;overflow:hidden;">
+            <div style="background:#f97316;padding:32px;text-align:center;">
+              <span style="color:white;font-size:22px;font-weight:700;">🔧 HardwareAI</span>
+            </div>
+            <div style="padding:40px 32px;">
+              <h1 style="color:white;font-size:24px;font-weight:700;margin:0 0 8px;">
+                Verify your email
+              </h1>
+              <p style="color:#888;font-size:15px;line-height:1.6;margin:0 0 32px;">
+                Click the button below to verify your email address and unlock full access to HardwareAI.
+              </p>
+              <a href="%s"
+                style="display:block;background:#f97316;color:white;text-decoration:none;
+                  text-align:center;padding:16px 24px;border-radius:12px;
+                  font-weight:600;font-size:15px;margin-bottom:24px;">
+                Verify Email →
+              </a>
+              <p style="color:#555;font-size:13px;">
+                This link expires in <strong style="color:#888;">24 hours</strong>.
+              </p>
+            </div>
+            <div style="padding:24px 32px;border-top:1px solid #222;text-align:center;">
+              <p style="color:#444;font-size:12px;margin:0;">© 2026 HardwareAI · Built for Lagos merchants</p>
+            </div>
+          </div>
+        </body>
+        </html>
+        """.formatted(verifyLink);
+    }
+
     private String buildResetEmailHtml(String resetLink) {
         return """
             <!DOCTYPE html>

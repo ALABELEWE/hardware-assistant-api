@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface MerchantProfileRepository extends JpaRepository<MerchantProfile, UUID> {
     Optional<MerchantProfile> findByUser(User user);
     Optional<MerchantProfile> findByUserId(UUID userId);
+    Optional<MerchantProfile> findByVerificationToken(String token);
 }

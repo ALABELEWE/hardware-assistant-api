@@ -30,6 +30,13 @@
 		<java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
 	</properties>
+    <!-- ADD THIS SECTION - JitPack Repository -->
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -68,7 +75,20 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
-
+        <!-- Source: https://mvnrepository.com/artifact/org.springframework.retry/spring-retry -->
+        <dependency>
+            <groupId>org.springframework.retry</groupId>
+            <artifactId>spring-retry</artifactId>
+            <version>2.0.12</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- Source: https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-aop -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+            <version>3.5.10</version>
+            <scope>compile</scope>
+        </dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
@@ -113,6 +133,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
+        <!-- Africa's Talking SDK - FROM JITPACK -->
+        <dependency>
+            <groupId>com.github.AfricasTalkingLtd</groupId>
+            <artifactId>africastalking-java</artifactId>
+            <version>v3.5.3</version>
         </dependency>
         <!-- JWT -->
         <dependency>
