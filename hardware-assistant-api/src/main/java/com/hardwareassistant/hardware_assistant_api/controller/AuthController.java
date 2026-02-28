@@ -5,6 +5,7 @@ import com.hardwareassistant.hardware_assistant_api.dto.request.RegisterRequest;
 import com.hardwareassistant.hardware_assistant_api.dto.response.ApiResponse;
 import com.hardwareassistant.hardware_assistant_api.dto.response.AuthResponse;
 import com.hardwareassistant.hardware_assistant_api.service.AuthService;
+import com.hardwareassistant.hardware_assistant_api.service.EmailVerificationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
@@ -33,29 +35,39 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 
-    @GetMapping("/verify-email")
-    public ResponseEntity<ApiResponse<String>> verifyEmail(
-            @RequestParam String token) {
+    @PostMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(
+            @RequestBody Map<String, String> request) {
+        String token = request.get("token");
+        if (token == null || token.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Token is required"));
+        }
         try {
-            authService.verifyEmail(token);
+            emailVerificationService.verifyEmail(token);
             return ResponseEntity.ok(
-                    ApiResponse.success("Email verified successfully. You can now log in.", null));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Verification link has expired or already been used. Please request a new one."));
+                    ApiResponse.success("Email verified successfully!", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<String>> resendVerification(
-            @RequestBody Map<String, String> body) {
+    public ResponseEntity<ApiResponse<Void>> resendVerification(
+            @RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error("Email is required"));
+        }
         try {
-            authService.resendVerificationEmail(body.get("email"));
+            emailVerificationService.sendVerificationEmail(email);
             return ResponseEntity.ok(
-                    ApiResponse.success("Verification email sent. Please check your inbox.", null));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    ApiResponse.error("Could not send verification email: " + e.getMessage()));
+                    ApiResponse.success("Verification email sent!", null));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest()
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 }
