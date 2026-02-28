@@ -27,15 +27,13 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil                  jwtUtil;
     private final AuthenticationManager    authenticationManager;
     private final EmailVerificationService emailVerificationService;
-    private final UserRegistrationHelper registrationHelper;
+    private final UserRegistrationHelper   registrationHelper;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        // Runs in its own transaction via separate bean — fully commits before email is sent
         User savedUser = registrationHelper.createAndSave(
                 request.getEmail(), request.getPassword());
 
-        // Email sent AFTER transaction commits — failure cannot roll back registration
         try {
             emailVerificationService.sendVerificationEmail(savedUser.getEmail());
         } catch (Exception e) {
@@ -73,5 +71,26 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .role(user.getRole().name())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void verifyEmail(String token) {
+        // Delegate to EmailVerificationService which already handles token validation
+        emailVerificationService.verifyEmail(token);
+    }
+
+    @Override
+    @Transactional
+    public void resendVerificationEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("No account found with that email address"));
+
+        if (user.isEmailVerified()) {
+            throw new BusinessException("This email is already verified");
+        }
+
+        emailVerificationService.sendVerificationEmail(email);
+        log.info("Verification email resent to: {}", email);
     }
 }
