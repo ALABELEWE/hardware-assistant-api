@@ -50,6 +50,10 @@ public class SecurityIncidentService {
     @Transactional
     public void banIfThresholdReached(User user, long attemptCount) {
         if (user == null) return;
+        if (user.getRole() == User.Role.ADMIN) {
+            log.info("Ban skipped — user={} is ADMIN", user.getEmail());
+            return;
+        }
         if (attemptCount >= BAN_THRESHOLD && !user.isBanned()) {
             user.setBanned(true);
             user.setBanReason("Repeated prompt injection attempts (" + attemptCount + " incidents)");
