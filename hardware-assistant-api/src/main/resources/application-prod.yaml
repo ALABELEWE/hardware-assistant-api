@@ -23,7 +23,7 @@ server:
 app:
   jwt:
     secret: ${JWT_SECRET}
-    expiration-ms: 86400000
+    expiration-ms: 604800000
   ai:
     groq-api-key: ${GROQ_API_KEY}
     groq-base-url: https://api.groq.com
