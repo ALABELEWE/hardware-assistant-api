@@ -1,5 +1,6 @@
 package com.hardwareassistant.hardware_assistant_api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,6 +16,7 @@ public class BusinessAnalysis {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_profile_id", nullable = false)
     private MerchantProfile merchantProfile;

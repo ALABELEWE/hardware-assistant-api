@@ -1,5 +1,6 @@
 package com.hardwareassistant.hardware_assistant_api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,7 @@ public class MerchantProfile {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     private User user;
@@ -42,6 +44,7 @@ public class MerchantProfile {
     @PrePersist
     protected void onCreate() { createdAt = LocalDateTime.now(); }
 
+    @JsonIgnore
     @OneToMany(mappedBy = "merchantProfile", cascade = CascadeType.ALL)
     private List<BusinessAnalysis> analyses;
 }

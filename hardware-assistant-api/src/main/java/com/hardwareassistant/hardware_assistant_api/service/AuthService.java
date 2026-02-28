@@ -5,8 +5,8 @@ import com.hardwareassistant.hardware_assistant_api.dto.request.RegisterRequest;
 import com.hardwareassistant.hardware_assistant_api.dto.response.AuthResponse;
 
 public interface AuthService {
-
     AuthResponse register(RegisterRequest request);
-
     AuthResponse login(LoginRequest request);
+    void verifyEmail(String token);
+    void resendVerificationEmail(String email);
 }
