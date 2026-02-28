@@ -1,8 +1,0 @@
-name: Manual IDE Build
-on: [push]
-jobs:
-  dummy-pass:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Skip build
-        run: echo "I am handling this in my IDE"
