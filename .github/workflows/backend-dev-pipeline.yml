@@ -1,0 +1,141 @@
+name: "Backend — Dev Pipeline"
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-dev.yml'
+  pull_request:
+    branches: [dev]
+    paths:
+      - 'backend/**'
+
+concurrency:
+  group: backend-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '21'
+  MAVEN_OPTS: '-Xmx1024m -XX:+TieredCompilation -XX:TieredStopAtLevel=1'
+
+jobs:
+
+  # ══════════════════════════════════════════════
+  # JOB 1 — Test (runs on push AND pull_request)
+  # ══════════════════════════════════════════════
+  test:
+    name: "🧪 Test Suite"
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: hardware_test
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Run tests
+        working-directory: backend
+        run: mvn clean verify -P test --no-transfer-progress
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/hardware_test
+          SPRING_DATASOURCE_USERNAME: testuser
+          SPRING_DATASOURCE_PASSWORD: testpass
+          JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results-dev-${{ github.run_number }}
+          path: backend/target/surefire-reports/
+          retention-days: 7
+
+  # ══════════════════════════════════════════════
+  # JOB 2 — Build (push to dev only, after tests pass)
+  # ══════════════════════════════════════════════
+  build:
+    name: "🔨 Build JAR"
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Build JAR
+        working-directory: backend
+        run: mvn clean package -DskipTests --no-transfer-progress
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar-dev
+          path: backend/target/*.jar
+          retention-days: 1
+
+  # ══════════════════════════════════════════════
+  # JOB 3 — Deploy to Railway DEV
+  # ══════════════════════════════════════════════
+  deploy:
+    name: "🚀 Deploy → Railway DEV"
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+
+    environment:
+      name: dev
+      url: ${{ vars.DEV_BACKEND_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli@latest
+
+      - name: Deploy to Railway DEV
+        working-directory: backend
+        run: railway up --service ${{ secrets.RAILWAY_DEV_SERVICE_ID }} --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_DEV_TOKEN }}
+
+      - name: Wait and verify health
+        run: |
+          echo "Waiting 40s for service to boot..."
+          sleep 40
+          STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+            "${{ vars.DEV_BACKEND_URL }}/actuator/health" || echo "000")
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check failed (HTTP $STATUS). Check Railway logs."
+            exit 1
+          fi
+          echo "✅ DEV backend is healthy (HTTP $STATUS)"
