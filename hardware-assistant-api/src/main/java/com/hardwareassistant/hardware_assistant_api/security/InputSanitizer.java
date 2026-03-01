@@ -23,7 +23,7 @@ public class InputSanitizer {
     static final int BLOCK_THRESHOLD = 3; // 3rd+ attempt → BLOCKED + ban trigger
 
     private static final List<PatternEntry> INJECTION_PATTERNS = List.of(
-            // ── Existing patterns ─────────────────────────────────────────────
+            // ── Existing patterns
             new PatternEntry("ignore_instructions",  Pattern.compile("ignore (all |previous )?instructions?",               Pattern.CASE_INSENSITIVE)),
             new PatternEntry("system_override",      Pattern.compile("system (prompt|override|message)",                    Pattern.CASE_INSENSITIVE)),
             new PatternEntry("persona_hijack",       Pattern.compile("you are now",                                         Pattern.CASE_INSENSITIVE)),
@@ -37,7 +37,7 @@ public class InputSanitizer {
             new PatternEntry("role_play",            Pattern.compile("act as|pretend (you are|to be)|roleplay",            Pattern.CASE_INSENSITIVE)),
             new PatternEntry("prompt_leak",          Pattern.compile("repeat (everything|your instructions|the above)",    Pattern.CASE_INSENSITIVE)),
 
-            // ── Authority impersonation (Attack 1) ────────────────────────────
+            // ── Authority impersonation (Attack 1)
             new PatternEntry("authority_claim",      Pattern.compile("(this request is |i am |coming from ).{0,30}(admin|administrator|system|security|developer|support|staff|operator)", Pattern.CASE_INSENSITIVE)),
             new PatternEntry("security_audit",       Pattern.compile("security (audit|review|test|scan|check|assessment)", Pattern.CASE_INSENSITIVE)),
             new PatternEntry("override_restrictions",Pattern.compile("override (your|all|the|my|any).{0,20}(restriction|limit|rule|policy|constraint|filter|safety|guideline)", Pattern.CASE_INSENSITIVE)),
@@ -46,13 +46,13 @@ public class InputSanitizer {
             new PatternEntry("internal_policy",      Pattern.compile("internal (policy|policies|rule|setting|config|prompt|instruction|guideline)", Pattern.CASE_INSENSITIVE)),
             new PatternEntry("safety_rules",         Pattern.compile("safety (rule|rules|policy|policies|filter|restriction|guideline)", Pattern.CASE_INSENSITIVE)),
 
-            // ── Function call injection (Attack 2) ────────────────────────────
+            // ── Function call injection (Attack 2)
             new PatternEntry("function_call",        Pattern.compile("call (the |a )?(\\w+) ?(function|method|api|endpoint|command)", Pattern.CASE_INSENSITIVE)),
             new PatternEntry("function_with_params", Pattern.compile("(function|method|command)\\s*\\(|\\w+\\s*=\\s*\\d+",           Pattern.CASE_INSENSITIVE)),
             new PatternEntry("delete_operation",     Pattern.compile("delete(User|Account|Record|Data|All|Every)",                    Pattern.CASE_INSENSITIVE)),
             new PatternEntry("execute_command",      Pattern.compile("execute|run (the |a )?(command|script|function|query|code)",    Pattern.CASE_INSENSITIVE)),
 
-            // ── System prompt extraction (Attack 3) ───────────────────────────
+            // ── System prompt extraction (Attack 3)
             new PatternEntry("print_conversation",   Pattern.compile("print (the |your |all |complete |full )?(conversation|message|chat|history|log|thread)", Pattern.CASE_INSENSITIVE)),
             new PatternEntry("hidden_messages",      Pattern.compile("hidden (message|messages|prompt|instruction|system)",           Pattern.CASE_INSENSITIVE)),
             new PatternEntry("developer_messages",   Pattern.compile("developer (message|messages|prompt|instruction|note)",         Pattern.CASE_INSENSITIVE)),
@@ -74,7 +74,7 @@ public class InputSanitizer {
     public SanitizationResult sanitize(String input, String fieldName, User currentUser) {
         if (input == null) return SanitizationResult.clean("");
 
-        // ── Length limit ──────────────────────────────────────────────────
+        // Length limit
         int maxLength = fieldName.equals("description") || fieldName.equals("products")
                 ? MAX_DESCRIPTION_LENGTH : MAX_FIELD_LENGTH;
         if (input.length() > maxLength) {
@@ -82,7 +82,7 @@ public class InputSanitizer {
             input = input.substring(0, maxLength);
         }
 
-        // ── Injection pattern check ───────────────────────────────────────
+        // ── Injection pattern check
         for (PatternEntry entry : INJECTION_PATTERNS) {
             if (entry.pattern().matcher(input).find()) {
 
@@ -110,7 +110,7 @@ public class InputSanitizer {
             }
         }
 
-        // ── Strip control characters ──────────────────────────────────────
+        // ── Strip control characters
         input = input.replaceAll("[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F\\x7F]", "");
         input = input.replaceAll("<\\|.*?\\|>", "");
 
