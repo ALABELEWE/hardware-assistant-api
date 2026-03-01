@@ -1,4 +1,4 @@
-package com.hardwareassistant.hardware_assistant_api.service;
+package com.hardwareassistant.hardware_assistant_api.service.impl;
 
 import com.hardwareassistant.hardware_assistant_api.dto.response.MetricsResult;
 import com.hardwareassistant.hardware_assistant_api.dto.response.MetricsResult.ExpenseCategory;
