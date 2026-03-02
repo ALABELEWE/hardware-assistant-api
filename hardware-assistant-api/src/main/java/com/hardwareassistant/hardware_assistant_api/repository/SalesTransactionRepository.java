@@ -38,4 +38,41 @@ public interface SalesTransactionRepository extends JpaRepository<SalesTransacti
     long countByPeriod(@Param("profile") MerchantProfile profile,
                        @Param("from") LocalDate from,
                        @Param("to") LocalDate to);
+
+
+    /**
+     * Total quantity sold for a specific product between two dates.
+     * Used to compute average monthly sales for overstock detection.
+     */
+    @Query("""
+    SELECT COALESCE(SUM(s.quantity), 0)
+    FROM SalesTransaction s
+    WHERE s.merchantProfile = :profile
+      AND s.product.id = :productId
+      AND s.transactionDate BETWEEN :from AND :to
+    """)
+    BigDecimal sumQuantitySoldByProduct(
+            @Param("profile")   MerchantProfile profile,
+            @Param("productId") UUID productId,
+            @Param("from")      LocalDate from,
+            @Param("to")        LocalDate to
+    );
+
+    /**
+     * Count of sales for a specific product between two dates.
+     * Used for dead stock detection (zero sales in last 30 days).
+     */
+    @Query("""
+    SELECT COUNT(s)
+    FROM SalesTransaction s
+    WHERE s.merchantProfile = :profile
+      AND s.product.id = :productId
+      AND s.transactionDate BETWEEN :from AND :to
+    """)
+    long countSalesByProduct(
+            @Param("profile")   MerchantProfile profile,
+            @Param("productId") UUID productId,
+            @Param("from")      LocalDate from,
+            @Param("to")        LocalDate to
+    );
 }
