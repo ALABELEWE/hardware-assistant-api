@@ -1,6 +1,7 @@
 package com.hardwareassistant.hardware_assistant_api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,6 +26,7 @@ public class SalesTransaction {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Product product;
 
     @Column(name = "product_name", nullable = false, length = 200)
