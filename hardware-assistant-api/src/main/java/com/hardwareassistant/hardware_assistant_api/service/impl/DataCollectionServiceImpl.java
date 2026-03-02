@@ -152,6 +152,7 @@ public class DataCollectionServiceImpl implements DataCollectionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<SalesTransaction> getSales(User user, Pageable pageable) {
         return salesRepository.findByMerchantProfileOrderByTransactionDateDescCreatedAtDesc(
                 getProfile(user), pageable);
