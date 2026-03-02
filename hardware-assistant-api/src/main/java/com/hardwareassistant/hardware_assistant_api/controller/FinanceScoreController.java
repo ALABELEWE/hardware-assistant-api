@@ -1,9 +1,9 @@
 package com.hardwareassistant.hardware_assistant_api.controller;
 
 import com.hardwareassistant.hardware_assistant_api.dto.response.ApiResponse;
-import com.hardwareassistant.hardware_assistant_api.dto.response.MetricsResult;
+import com.hardwareassistant.hardware_assistant_api.dto.response.FinanceScoreResult;
 import com.hardwareassistant.hardware_assistant_api.model.User;
-import com.hardwareassistant.hardware_assistant_api.service.impl.MetricsService;
+import com.hardwareassistant.hardware_assistant_api.service.impl.FinanceScoreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/metrics")
+@RequestMapping("/api/finance-score")
 @RequiredArgsConstructor
-public class MetricsController {
+public class FinanceScoreController {
 
-    private final MetricsService metricsService;
+    private final FinanceScoreService financeScoreService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<MetricsResult>> getMetrics(
+    public ResponseEntity<ApiResponse<FinanceScoreResult>> getScore(
             @AuthenticationPrincipal User user) {
-        MetricsResult metrics = metricsService.compute(user);
-        return ResponseEntity.ok(ApiResponse.success(metrics));
+        FinanceScoreResult score = financeScoreService.compute(user);
+        return ResponseEntity.ok(ApiResponse.success(score));
     }
 }
